@@ -1,8 +1,29 @@
 <script>
-  let { droppedBy = "Domantas", x = 0, y = 0 } = $props();
+  let { droppedBy = "Domantas", x = $bindable(0), y = $bindable(0) } = $props();
+  function pointerDown(event) {
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const origX = x;
+    const origY = y;
+    const cardRect = event.currentTarget.getBoundingClientRect();
+    const canvasRect = event.currentTarget.closest(".canvas").getBoundingClientRect();
+    const maxX = canvasRect.width - cardRect.width;
+    const maxY = canvasRect.height - cardRect.height;
+
+    function move(e) {
+      x = Math.min(Math.max(origX + (e.clientX - startX), 0), maxX);
+      y = Math.min(Math.max(origY + (e.clientY - startY), 0), maxY);
+    }
+    function up() {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    }
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
 </script>
 
-<div class="video-card" style="left:{x}px; top:{y}px;">
+<div onpointerdown={pointerDown} role="button" tabindex="0" class="video-card" style="left:{x}px; top:{y}px;">
   <div class="video-header">
     <i class="fa-solid fa-grip-vertical"></i>
     <span>dropped by {droppedBy}</span>
@@ -23,6 +44,8 @@
     background: #1c1a2e;
     border: 1px solid var(--color-border);
     overflow: hidden;
+    /* cursor: grab; */
+    /* touch-action: none; */
   }
 
   .video-header {

@@ -3,7 +3,7 @@
 
   const messages = [
     { id: 1, name: "Mia", message: "omw, give me 2 min", avatarColor: "var(--color-note-teal)" },
-    { id: 1, name: "Jonas", message: "no worries, queued the video", avatarColor: "var(--color-note-coral)" }
+    { id: 2, name: "Jonas", message: "no worries, queued the video", avatarColor: "var(--color-note-coral)" }
   ];
 </script>
 

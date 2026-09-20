@@ -1,7 +1,7 @@
 <script>
-  import RoomHeader from "$lib/components/room/RoomHeader.svelte";
-  import RoomCanvas from "$lib/components/room/RoomCanvas.svelte";
-  import ChatSidebar from "$lib/components/room/ChatSidebar.svelte";
+  import RoomHeader from "$lib/components/hud/RoomHeader.svelte";
+  import RoomCanvas from "$lib/components/hud/RoomCanvas.svelte";
+  import ChatSidebar from "$lib/components/hud/ChatSidebar.svelte";
 </script>
 
 <div class="room-page">

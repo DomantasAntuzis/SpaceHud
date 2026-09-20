@@ -1,8 +1,14 @@
+<script>
+  let {
+    createPlayerCall,
+  } = $props();
+</script>
+
 <div class="add-toolbar">
   <span class="hint">drag into the room to add</span>
   <div class="buttons">
-    <button><i class="fa-solid fa-circle-play"></i> video</button>
-    <button><i class="fa-solid fa-music"></i> music</button>
+    <button onclick={() => {createPlayerCall("video-player");}}><i class="fa-solid fa-circle-play"></i> video</button>
+    <button onclick={() => {createPlayerCall("music-player");}}><i class="fa-solid fa-music"></i> music</button>
   </div>
 </div>
 
