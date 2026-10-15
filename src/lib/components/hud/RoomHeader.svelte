@@ -1,16 +1,43 @@
 <script>
-  let { roomName = "friday hangout", roomCode = "#a1b2c3" } = $props();
+  import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
+  import MemberBubbles from "./MemberBubbles.svelte";
+  import { room, closeRoom, isCreator, pushToast } from "$lib/state/room.svelte.js";
+  import { deleteRoom } from "$lib/api/room";
+  import { ApiError } from "$lib/api/http";
+
+  function leave() {
+    closeRoom();
+    goto(resolve("/"));
+  }
+
+  async function remove() {
+    try {
+      await deleteRoom(room.id);
+      leave();
+    } catch (e) {
+      pushToast(
+        e instanceof ApiError && e.status === 404
+          ? "only the host can delete this room"
+          : e.message,
+      );
+    }
+  }
 </script>
 
 <header class="room-header">
   <div class="room-title">
     <i class="fa-solid fa-house"></i>
-    <span class="name">{roomName}</span>
-    <span class="code">{roomCode}</span>
+    <span class="name">room</span>
+    <span class="code">#{room.id}</span>
   </div>
+  <MemberBubbles />
   <div class="room-actions">
     <button class="btn-invite"><i class="fa-solid fa-link"></i> invite</button>
-    <button class="btn-leave"><i class="fa-solid fa-chevron-left"></i> leave</button>
+    {#if isCreator()}
+      <button class="btn-leave" onclick={remove}><i class="fa-solid fa-trash"></i> delete</button>
+    {/if}
+    <button class="btn-leave" onclick={leave}><i class="fa-solid fa-chevron-left"></i> leave</button>
   </div>
 </header>
 

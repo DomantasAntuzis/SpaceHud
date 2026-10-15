@@ -1,13 +1,26 @@
 <script>
   import { resolve } from "$app/paths";
+  import { user, clearUser } from "$lib/state/user.svelte.js";
+  import { logout } from "$lib/api/auth";
 
+  async function handleLogout() {
+    await logout().catch(() => {});
+    clearUser();
+  }
 </script>
 <header>
     <div id="title-wrapper">
         <i class="fa-solid fa-face-smile"></i>
         <div> Hangout </div>
     </div>
-    <a href={resolve('/login')}>Login</a>
+    <div id="auth">
+        {#if user.current}<span>{user.current.username}</span>{/if}
+        {#if user.current?.type === "registered"}
+            <button onclick={handleLogout}>Logout</button>
+        {:else}
+            <a href={resolve('/login')}>Login</a>
+        {/if}
+    </div>
 </header>
 
 <style>
@@ -26,7 +39,11 @@
         display: flex;
         align-self: center;
     }
-    a {
+    #auth {
+        display: flex; align-items: center; gap: 12px;
+        font-family: var(--font-body);
+    }
+    a, button {
         all: unset;
         display: flex;
         align-items: center; justify-content: center;
@@ -34,7 +51,7 @@
         border-radius: 50px; border: 1px solid var(--color-border);
         padding: 5px 15px;
     }
-    a:hover{
+    a:hover, button:hover{
         cursor: pointer;
         background-color: var(--color-accent);
     }
@@ -46,7 +63,7 @@
         #title-wrapper {
             font-size: 22px;
         }
-        a {
+        a, button {
             font-size: 14px;
             padding: 5px 12px;
         }

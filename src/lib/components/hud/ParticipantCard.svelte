@@ -53,8 +53,16 @@
     padding: 14px;
     border-radius: 14px;
     border: 1.5px solid transparent;
+    animation: appear 0.3s ease-out;
     /* cursor: grab; */
     /* touch-action: none; */
+  }
+
+  @keyframes appear {
+    from {
+      transform: scale(0.85);
+      opacity: 0;
+    }
   }
 
   .participant.speaking {

@@ -4,9 +4,17 @@
   import MusicPlayer from "./MusicPlayer.svelte";
   import AddToolbar from "./AddToolbar.svelte";
   import { mount, unmount } from "svelte";
+  import { room } from "$lib/state/room.svelte.js";
 
   let mountedInstances = {};
   let canvasRef;
+
+  // Each member gets a stable start slot, assigned once on first sight.
+  const startPositions = {};
+  function startPos(id, index) {
+    startPositions[id] ??= { x: 40 + (index % 4) * 200, y: 40 + Math.floor(index / 4) * 100 };
+    return startPositions[id];
+  }
 
   function createPlayerInstance(functionCall) {
     if (functionCall === "video-player") {
@@ -45,15 +53,17 @@
 </script>
 
 <div role="application" class="canvas" bind:this={canvasRef}>
-  <ParticipantCard
-    name="Domantas"
-    initial="D"
-    avatarColor="var(--color-accent)"
-    cardColor="#2a2350"
-    speaking={true}
-    x={70}
-    y={70}
-  />
+  {#each room.members as m, i (m.id)}
+    {@const p = startPos(m.id, i)}
+    <ParticipantCard
+      name={m.username}
+      initial={m.username.charAt(0).toUpperCase()}
+      avatarColor={m.color}
+      cardColor="#2a2350"
+      x={p.x}
+      y={p.y}
+    />
+  {/each}
 
   <VideoPlayer droppedBy="Domantas" x={242} y={377} />
 
