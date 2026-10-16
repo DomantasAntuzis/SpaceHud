@@ -1,6 +1,9 @@
 import { request } from "./http";
 
 export const createRoom = () => request("/room", { method: "POST" });
-export const getRoom = (id) => request(`/room/${encodeURIComponent(id)}`);
-export const deleteRoom = (id) =>
-  request(`/room/${encodeURIComponent(id)}`, { method: "DELETE" });
+export const getRoom = (slug, invite) => {
+  const query = invite ? `?invite=${encodeURIComponent(invite)}` : "";
+  return request(`/room/${encodeURIComponent(slug)}${query}`);
+};
+export const deleteRoom = (slug) =>
+  request(`/room/${encodeURIComponent(slug)}`, { method: "DELETE" });

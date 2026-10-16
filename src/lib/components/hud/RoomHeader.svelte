@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import MemberBubbles from "./MemberBubbles.svelte";
-  import { room, closeRoom, isCreator, pushToast } from "$lib/state/room.svelte.js";
+  import { room, closeRoom, inviteLink, pushToast } from "$lib/state/room.svelte.js";
   import { deleteRoom } from "$lib/api/room";
   import { ApiError } from "$lib/api/http";
 
@@ -11,9 +11,18 @@
     goto(resolve("/"));
   }
 
+  async function copyInvite() {
+    try {
+      await navigator.clipboard.writeText(inviteLink());
+      pushToast("invite link copied");
+    } catch {
+      pushToast("couldn't copy the invite link");
+    }
+  }
+
   async function remove() {
     try {
-      await deleteRoom(room.id);
+      await deleteRoom(room.slug);
       leave();
     } catch (e) {
       pushToast(
@@ -29,12 +38,14 @@
   <div class="room-title">
     <i class="fa-solid fa-house"></i>
     <span class="name">room</span>
-    <span class="code">#{room.id}</span>
+    <span class="code">#{room.slug}</span>
   </div>
   <MemberBubbles />
   <div class="room-actions">
-    <button class="btn-invite"><i class="fa-solid fa-link"></i> invite</button>
-    {#if isCreator()}
+    {#if room.isHost}
+      <button class="btn-invite" onclick={copyInvite}><i class="fa-solid fa-link"></i> invite</button>
+    {/if}
+    {#if room.isHost}
       <button class="btn-leave" onclick={remove}><i class="fa-solid fa-trash"></i> delete</button>
     {/if}
     <button class="btn-leave" onclick={leave}><i class="fa-solid fa-chevron-left"></i> leave</button>

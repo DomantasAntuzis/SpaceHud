@@ -30,8 +30,10 @@
       else await login(username.trim(), password);
       // register returns no user object, and the session id changed on login
       await refreshUser();
-      if (room.id != null) reconnectSocket();
-      await goto(room.id != null ? resolve(`/room/${room.id}`) : resolve("/"));
+      if (room.slug != null) reconnectSocket();
+      // keep the invite so the new session id still enters without a knock
+      const invite = room.invite ? `?invite=${encodeURIComponent(room.invite)}` : "";
+      await goto(room.slug != null ? resolve(`/room/${room.slug}`) + invite : resolve("/"));
     } catch (e) {
       error =
         e instanceof ApiError && e.status === 429

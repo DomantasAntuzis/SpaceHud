@@ -12,17 +12,16 @@ const COLORS = [
 ];
 
 export const room = $state({
-  id: null,
-  status: "idle", // idle | loading | notfound | error | ready
+  slug: null,
+  invite: null, // invite token from the link the visitor opened
+  inviteToken: null, // only set for the host, used to build the shareable link
+  isHost: false,
+  status: "idle", // idle | loading | waiting | denied | notfound | error | ready
   error: "",
   members: [],
+  requests: [], // host only: visitors waiting to be let in
   toasts: [],
 });
-
-// ids of rooms created by this client, so the host UI can show "delete"
-const created = new Set();
-export const markCreated = (id) => created.add(String(id));
-export const isCreator = () => room.id != null && created.has(String(room.id));
 
 function colorFor(id) {
   let h = 0;
@@ -43,25 +42,51 @@ export function pushToast(text) {
   }, 3000);
 }
 
-export async function openRoom(id) {
+/** Shareable link that lets people in without the host's approval (host only). */
+export function inviteLink() {
+  if (!room.inviteToken) return "";
+  return `${location.origin}/room/${room.slug}?invite=${room.inviteToken}`;
+}
+
+function removeRequest(u) {
+  room.requests = room.requests.filter((r) => r.id !== String(u.id));
+}
+
+export async function openRoom(slug, invite = null) {
   closeRoom();
-  room.id = id;
+  room.slug = slug;
+  room.invite = invite;
   room.status = "loading";
   try {
-    const data = await getRoom(id); // also creates a guest session if needed
+    const data = await getRoom(slug, invite); // also creates a guest session if needed
+    room.isHost = data.isHost;
+    room.inviteToken = data.inviteToken ?? null;
     room.members = data.members.map(toMember);
     await refreshUser();
-    room.status = "ready";
-    connectToRoom(id, {
-      onMembers: (list) => (room.members = list.map(toMember)),
+    room.status = data.allowed ? "ready" : "waiting";
+    connectToRoom(slug, invite, {
+      // The server sends the member list once we are actually in the room
+      onMembers: (list) => {
+        room.members = list.map(toMember);
+        if (room.status === "waiting") room.status = "ready";
+      },
+      onWaiting: () => (room.status = "waiting"),
+      onDenied: () => (room.status = "denied"),
       onJoined: (u) => pushToast(`${u.username} has joined`),
+      onPending: (list) => (room.requests = list.map(toMember)),
+      onKnockRequest: (u) => {
+        removeRequest(u);
+        room.requests.push(toMember(u));
+        pushToast(`${u.username} wants to join`);
+      },
+      onKnockCancel: removeRequest,
       onJoinError: (msg) => {
         room.status = "error";
         room.error = msg;
       },
       onConnectError: async (err) => {
         if (err.message === "unauthorized") {
-          await getRoom(id).catch(() => {});
+          await getRoom(slug, invite).catch(() => {});
           await refreshUser();
         }
       },
@@ -77,8 +102,12 @@ export async function openRoom(id) {
 
 export function closeRoom() {
   disconnectSocket();
-  room.id = null;
+  room.slug = null;
+  room.invite = null;
+  room.inviteToken = null;
+  room.isHost = false;
   room.members = [];
+  room.requests = [];
   room.toasts = [];
   room.status = "idle";
   room.error = "";

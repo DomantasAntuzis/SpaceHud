@@ -2,7 +2,6 @@
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { createRoom } from "$lib/api/room";
-  import { markCreated } from "$lib/state/room.svelte.js";
   import { refreshUser } from "$lib/state/user.svelte.js";
 
   let joining = $state(false);
@@ -15,10 +14,9 @@
     error = "";
     joining = false;
     try {
-      const { roomId } = await createRoom();
-      markCreated(roomId);
+      const { slug } = await createRoom();
       await refreshUser();
-      await goto(resolve(`/room/${roomId}`));
+      await goto(resolve(`/room/${slug}`));
     } catch (e) {
       error = e.message;
     } finally {
@@ -28,12 +26,21 @@
 
   function handleJoin(event) {
     event.preventDefault();
-    const id = code.trim().replace(/^#/, "");
-    if (!/^\d+$/.test(id)) {
-      error = "enter a numeric room code";
+    // accepts a bare room code or a pasted invite link
+    let slug = code.trim();
+    let invite = "";
+    try {
+      const url = new URL(slug);
+      slug = url.pathname.split("/").pop();
+      invite = url.searchParams.get("invite") ?? "";
+    } catch {
+      // not a URL, treat as a bare code
+    }
+    if (!/^[a-z2-7]{12}$/.test(slug)) {
+      error = "enter a valid room code or invite link";
       return;
     }
-    goto(resolve(`/room/${id}`));
+    goto(resolve(`/room/${slug}`) + (invite ? `?invite=${encodeURIComponent(invite)}` : ""));
   }
 </script>
 
@@ -59,7 +66,7 @@
     </div>
     {#if joining}
       <form onsubmit={handleJoin}>
-        <input bind:value={code} placeholder="room code, e.g. 12" />
+        <input bind:value={code} placeholder="room code or invite link" />
         <button>join</button>
       </form>
     {/if}
