@@ -1,3 +1,4 @@
+import { SvelteSet } from 'svelte/reactivity';
 import { getRoom } from "$lib/api/room";
 import { ApiError } from "$lib/api/http";
 import { connectToRoom, disconnectSocket } from "$lib/api/socket";
@@ -20,12 +21,24 @@ export const room = $state({
   error: "",
   members: [],
   requests: [], // host only: visitors waiting to be let in
+  elements: {}, // canvas elements keyed by id: { id, type, x, y, ownerId, props }
   toasts: [],
 });
 
+// Ids of elements this user is dragging right now; remote moves for them are ignored
+const locallyDraggedElementIds = new SvelteSet();
+
+export function markElementDragging(elementId) {
+  locallyDraggedElementIds.add(String(elementId));
+}
+
+export function unmarkElementDragging(elementId) {
+  locallyDraggedElementIds.delete(String(elementId));
+}
+
 function colorFor(id) {
   let h = 0;
-  for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  for (const c of String(id)) {h = (h * 31 + c.charCodeAt(0)) >>> 0;}
   return COLORS[h % COLORS.length];
 }
 
@@ -44,7 +57,7 @@ export function pushToast(text) {
 
 /** Shareable link that lets people in without the host's approval (host only). */
 export function inviteLink() {
-  if (!room.inviteToken) return "";
+  if (!room.inviteToken) {return "";}
   return `${location.origin}/room/${room.slug}?invite=${room.inviteToken}`;
 }
 
@@ -68,7 +81,7 @@ export async function openRoom(slug, invite = null) {
       // The server sends the member list once we are actually in the room
       onMembers: (list) => {
         room.members = list.map(toMember);
-        if (room.status === "waiting") room.status = "ready";
+        if (room.status === "waiting") {room.status = "ready";}
       },
       onWaiting: () => (room.status = "waiting"),
       onDenied: () => (room.status = "denied"),
@@ -80,6 +93,17 @@ export async function openRoom(slug, invite = null) {
         pushToast(`${u.username} wants to join`);
       },
       onKnockCancel: removeRequest,
+      // Full snapshot sent on every join, including reconnects
+      onCanvasState: (elementsById) => (room.elements = elementsById),
+      onCanvasAdded: (element) => (room.elements[element.id] = element),
+      onCanvasMoved: (elementId, x, y) => {
+        const movedElement = room.elements[elementId];
+        if (movedElement && !locallyDraggedElementIds.has(String(elementId))) {
+          movedElement.x = x;
+          movedElement.y = y;
+        }
+      },
+      onCanvasRemoved: (elementId) => delete room.elements[elementId],
       onJoinError: (msg) => {
         room.status = "error";
         room.error = msg;
@@ -92,7 +116,7 @@ export async function openRoom(slug, invite = null) {
       },
     });
   } catch (e) {
-    if (e instanceof ApiError && e.status === 404) room.status = "notfound";
+    if (e instanceof ApiError && e.status === 404) {room.status = "notfound";}
     else {
       room.status = "error";
       room.error = e.message;
@@ -108,6 +132,7 @@ export function closeRoom() {
   room.isHost = false;
   room.members = [];
   room.requests = [];
+  room.elements = {};
   room.toasts = [];
   room.status = "idle";
   room.error = "";

@@ -1,37 +1,29 @@
 <script>
   import { mount, unmount } from "svelte";
+  import { startDrag } from "$lib/utils/draggable.js";
 
   let {
-    droppedBy = "Domantas",
+    droppedBy = "",
     track = "lofi chill mix",
     x = $bindable(0),
     y = $bindable(0),
-    destroyInstance
+    destroyInstance,
+    onDrag,
+    onDragEnd
   } = $props();
   let playing = $state(false);
 
   function pointerDown(event) {
-    const startX = event.clientX;
-    const startY = event.clientY;
-    const origX = x;
-    const origY = y;
-    const cardRect = event.currentTarget.getBoundingClientRect();
-    const canvasRect = event.currentTarget
-      .closest(".canvas")
-      .getBoundingClientRect();
-    const maxX = canvasRect.width - cardRect.width;
-    const maxY = canvasRect.height - cardRect.height;
-
-    function move(e) {
-      x = Math.min(Math.max(origX + (e.clientX - startX), 0), maxX);
-      y = Math.min(Math.max(origY + (e.clientY - startY), 0), maxY);
-    }
-    function up() {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    }
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
+    startDrag(
+      event,
+      { x, y },
+      (position) => {
+        x = position.x;
+        y = position.y;
+        onDrag?.(position.x, position.y);
+      },
+      (position) => onDragEnd?.(position.x, position.y)
+    );
   }
 </script>
 

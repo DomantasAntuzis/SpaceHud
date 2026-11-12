@@ -3,8 +3,6 @@
   import { resolve } from "$app/paths";
   import MemberBubbles from "./MemberBubbles.svelte";
   import { room, closeRoom, inviteLink, pushToast } from "$lib/state/room.svelte.js";
-  import { deleteRoom } from "$lib/api/room";
-  import { ApiError } from "$lib/api/http";
 
   function leave() {
     closeRoom();
@@ -19,19 +17,6 @@
       pushToast("couldn't copy the invite link");
     }
   }
-
-  async function remove() {
-    try {
-      await deleteRoom(room.slug);
-      leave();
-    } catch (e) {
-      pushToast(
-        e instanceof ApiError && e.status === 404
-          ? "only the host can delete this room"
-          : e.message,
-      );
-    }
-  }
 </script>
 
 <header class="room-header">
@@ -44,9 +29,6 @@
   <div class="room-actions">
     {#if room.isHost}
       <button class="btn-invite" onclick={copyInvite}><i class="fa-solid fa-link"></i> invite</button>
-    {/if}
-    {#if room.isHost}
-      <button class="btn-leave" onclick={remove}><i class="fa-solid fa-trash"></i> delete</button>
     {/if}
     <button class="btn-leave" onclick={leave}><i class="fa-solid fa-chevron-left"></i> leave</button>
   </div>

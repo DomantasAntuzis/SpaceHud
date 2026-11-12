@@ -39,6 +39,10 @@ function ensure() {
     if (current) join();
   });
   socket.on("room:denied", () => current?.handlers.onDenied?.());
+  socket.on("canvas:state", ({ elements }) => current?.handlers.onCanvasState?.(elements));
+  socket.on("canvas:added", ({ element }) => current?.handlers.onCanvasAdded?.(element));
+  socket.on("canvas:moved", ({ id, x, y }) => current?.handlers.onCanvasMoved?.(id, x, y));
+  socket.on("canvas:removed", ({ id }) => current?.handlers.onCanvasRemoved?.(id));
   return socket;
 }
 
@@ -54,6 +58,30 @@ export function connectToRoom(slug, invite, handlers) {
 export function answerKnock(allow, userId) {
   if (!current) return;
   socket.emit(allow ? "room:admit" : "room:deny", { slug: current.slug, userId });
+}
+
+/** Tell the room a new element was created: { id, type, x, y, props }. */
+export function emitCanvasAdd(element) {
+  if (!current) {
+    return;
+  }
+  socket.emit("canvas:add", element);
+}
+
+/** Tell the room an element moved to a new position. */
+export function emitCanvasMove(elementId, x, y) {
+  if (!current) {
+    return;
+  }
+  socket.emit("canvas:move", { id: elementId, x, y });
+}
+
+/** Tell the room an element was removed. */
+export function emitCanvasRemove(elementId) {
+  if (!current) {
+    return;
+  }
+  socket.emit("canvas:remove", { id: elementId });
 }
 
 /** Session changed (login/register): drop the connection and rejoin. */
